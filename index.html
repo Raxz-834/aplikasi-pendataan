@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pencatatan Uang Horizontal</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Pencatatan Uang (Horizontal)</h1>
+        <div class="form-group">
+            <label for="description">Deskripsi:</label>
+            <input type="text" id="description" placeholder="Deskripsi transaksi">
+        </div>
+        <div class="form-group">
+            <label for="amount">Jumlah (negatif untuk pengeluaran):</label>
+            <input type="text" id="amount" placeholder="Jumlah" oninput="formatAmount()">
+        </div>
+        <button id="submit-btn" onclick="addTransaction()">Tambahkan Transaksi</button>
+
+        <h2>Transaksi</h2>
+        <table id="transaction-table">
+            <thead>
+                <tr id="header-row">
+                    <th>No</th>
+                    <th>Deskripsi</th>
+                    <th>Jumlah</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr id="no-row"><td>No</td></tr>
+                <tr id="description-row"><td>Deskripsi</td></tr>
+                <tr id="amount-row"><td>Jumlah</td></tr>
+                <tr id="action-row"><td>Aksi</td></tr>
+            </tbody>
+        </table>
+
+        <h2>Total Saldo: <span id="total-balance">Rp0</span></h2>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
