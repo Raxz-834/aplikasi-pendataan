@@ -1,123 +1,72 @@
-let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
-let editTransactionId = null;  // Untuk menyimpan ID transaksi yang sedang diedit
+let totalDana = 0; // Variabel untuk menyimpan total dana
 
-// Fungsi untuk memformat angka dengan pemisah ribuan
-function formatAmount() {
-    const amountInput = document.getElementById('amount');
-    let amount = amountInput.value;
+function updateTotalDana() {
+    const uangMasukInput = document.getElementById('uang-masuk').value.replace(/\./g, '') || '0'; // Menghapus titik atau set ke 0
+    const uangKeluarInput = document.getElementById('uang-keluar').value.replace(/\./g, '') || '0'; // Menghapus titik atau set ke 0
 
-    // Hapus semua karakter selain angka
-    amount = amount.replace(/[^,\d]/g, '');
-
-    // Tambahkan titik setiap tiga digit
-    const formattedAmount = amount.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-
-    amountInput.value = formattedAmount;
+    // Menghitung total dana
+    const uangMasuk = parseInt(uangMasukInput) || 0; // Memastikan uang masuk adalah angka
+    const uangKeluar = parseInt(uangKeluarInput) || 0; // Memastikan uang keluar adalah angka
+    
+    // Jika ada uang masuk, reset total dana ke nilai uang masuk
+    if (uangMasuk > 0) {
+        totalDana = uangMasuk; 
+    }
+    
+    // Jika ada uang keluar, kurangi total dana
+    if (uangKeluar > 0) {
+        totalDana -= uangKeluar; 
+    }
 }
 
-// Fungsi untuk menghapus titik dari format saat menyimpan data
-function parseAmount(value) {
-    return parseFloat(value.replace(/\./g, ''));
-}
-
-// Fungsi untuk menambahkan atau mengedit transaksi
 function addTransaction() {
-    const description = document.getElementById('description').value;
-    let amount = document.getElementById('amount').value;
+    const keterangan = document.getElementById('keterangan').value;
+    const uangMasukInput = document.getElementById('uang-masuk').value.replace(/\./g, ''); // Menghapus titik
+    const uangKeluarInput = document.getElementById('uang-keluar').value.replace(/\./g, ''); // Menghapus titik
 
-    // Parsing amount untuk menghapus titik
-    amount = parseAmount(amount);
+    const transactionBody = document.getElementById('transaction-body');
+    const newRow = document.createElement('tr');
+    const nomor = transactionBody.rows.length + 1; // Nomor berdasarkan jumlah baris
 
-    if (description === '' || isNaN(amount)) {
-        alert('Masukkan deskripsi dan jumlah yang valid');
-        return;
-    }
+    newRow.innerHTML = `
+        <td>${nomor}</td>
+        <td>${keterangan}</td>
+        <td>${formatRupiah(uangMasukInput)}</td>
+        <td>${formatRupiah(uangKeluarInput)}</td>
+        <td>${formatRupiah(totalDana.toString())}</td>
+        <td><button onclick="deleteRow(this)">Hapus</button></td>
+    `;
 
-    if (editTransactionId !== null) {
-        // Edit transaksi yang ada
-        transactions = transactions.map(transaction => {
-            if (transaction.id === editTransactionId) {
-                return { id: editTransactionId, description, amount };
-            }
-            return transaction;
-        });
-        editTransactionId = null;
-        document.getElementById('submit-btn').textContent = 'Tambahkan Transaksi';
-    } else {
-        // Tambahkan transaksi baru
-        const transaction = {
-            id: transactions.length > 0 ? transactions[transactions.length - 1].id + 1 : 1,
-            description,
-            amount
-        };
-        transactions.push(transaction);
-    }
+    transactionBody.appendChild(newRow);
 
-    updateLocalStorage();
-    updateTransactionTable();
-    updateTotalBalance();
-
-    document.getElementById('description').value = '';
-    document.getElementById('amount').value = '';
+    // Reset form
+    document.getElementById('transaction-form').reset();
+    updateTotalDana(); // Update total dana setelah transaksi
 }
 
-// Fungsi untuk memperbarui tabel transaksi (horizontal)
-function updateTransactionTable() {
-    const headerRow = document.getElementById('header-row');
-    const noRow = document.getElementById('no-row');
-    const descriptionRow = document.getElementById('description-row');
-    const amountRow = document.getElementById('amount-row');
-    const actionRow = document.getElementById('action-row');
+function deleteRow(button) {
+    const row = button.parentNode.parentNode; // Mendapatkan baris yang akan dihapus
+    const uangMasuk = row.cells[2].innerText.replace(/\./g, ''); // Mendapatkan Uang Masuk dari baris
+    const uangKeluar = row.cells[3].innerText.replace(/\./g, ''); // Mendapatkan Uang Keluar dari baris
 
-    // Kosongkan baris
-    noRow.innerHTML = '<td>No</td>';
-    descriptionRow.innerHTML = '<td>Deskripsi</td>';
-    amountRow.innerHTML = '<td>Jumlah</td>';
-    actionRow.innerHTML = '<td>Aksi</td>';
+    totalDana -= parseInt(uangMasuk) || 0; // Kurangi total dana sesuai dengan uang masuk yang dihapus
+    totalDana += parseInt(uangKeluar) || 0; // Tambahkan total dana sesuai dengan uang keluar yang dihapus
 
-    transactions.forEach((transaction, index) => {
-        noRow.innerHTML += `<td>${index + 1}</td>`;
-        descriptionRow.innerHTML += `<td>${transaction.description}</td>`;
-        amountRow.innerHTML += `<td>Rp${Math.abs(transaction.amount).toLocaleString('id-ID')}</td>`;
-        actionRow.innerHTML += `
-            <td>
-                <button class="edit" onclick="editTransaction(${transaction.id})">Edit</button>
-                <button onclick="deleteTransaction(${transaction.id})">Hapus</button>
-            </td>
-        `;
-    });
+    row.parentNode.removeChild(row); // Menghapus baris dari tabel
+
+    // Update nomor urut pada tabel
+    updateTable();
 }
 
-// Fungsi untuk menghitung total saldo
-function updateTotalBalance() {
-    const totalBalance = transactions.reduce((acc, transaction) => acc + transaction.amount, 0);
-    document.getElementById('total-balance').textContent = `Rp${totalBalance.toLocaleString('id-ID')}`;
-}
+function updateTable() {
+    const transactionBody = document.getElementById('transaction-body');
+    const rows = transactionBody.getElementsByTagName('tr');
 
-// Fungsi untuk menyimpan data ke localStorage
-function updateLocalStorage() {
-    localStorage.setItem('transactions', JSON.stringify(transactions));
-}
-
-// Fungsi untuk menghapus transaksi
-function deleteTransaction(id) {
-    transactions = transactions.filter(transaction => transaction.id !== id);
-    updateLocalStorage();
-    updateTransactionTable();
-    updateTotalBalance();
-}
-
-// Fungsi untuk mengedit transaksi
-function editTransaction(id) {
-    const transaction = transactions.find(transaction => transaction.id === id);
-    if (transaction) {
-        document.getElementById('description').value = transaction.description;
-        document.getElementById('amount').value = transaction.amount.toLocaleString('id-ID').replace(/,/g, '.');
-        editTransactionId = id;
-        document.getElementById('submit-btn').textContent = 'Update Transaksi';
+    for (let i = 0; i < rows.length; i++) {
+        rows[i].cells[0].innerText = i + 1; // Update nomor urut
     }
 }
 
-// Inisialisasi tampilan awal
-updateTransactionTable();
-updateTotalBalance();
+function formatRupiah(angka) {
+    return angka.replace(/\B(?=(\d{3})+(?!\d))/g, '.'); // Format angka menjadi format Rupiah
+}
